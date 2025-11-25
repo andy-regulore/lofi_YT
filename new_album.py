@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 
 # Replace with your actual version hash
-VERSION_HASH = "823a7266fd405a24c2d9c1111c6ffc2668b1194f0ff8dfd0332b37f2cd55463e"
+VERSION_HASH = "f72b0eedd67edcce35eafe9889361b959e38e20891c1e3334750704e1738e288"
 
 # Start prediction
 prediction = replicate.predictions.create(
