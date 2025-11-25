@@ -1,18 +1,14 @@
 import torch
 import random
 import numpy as np
-import json
+import soundfile as sf
 from pathlib import Path
 from datetime import datetime
 from typing import List
 
 class Predictor:
     def setup(self):
-        """
-        Called once when the model is loaded.
-        Place any heavy model loading here.
-        """
-        # Example: load your trained model here
+        # Load your trained model here
         # self.model = torch.load("models/lofi-gen.pt")
         self.model = None  # placeholder
 
@@ -26,48 +22,31 @@ class Predictor:
         postprocess: bool = False
     ) -> List[str]:
         """
-        Main entry point. Cog inspects this signature to expose inputs.
-        - generation_prompt: string describing the vibe of the track
-        - duration: length of audio in seconds
-        - sample_rate: output sample rate in Hz
-        - seeds: list of integers for reproducible variations
-        - album_prefix: prefix for album/track naming
-        - postprocess: whether to apply vinyl crackle / normalization
-        Returns: List of track descriptors (strings)
+        Generate audio tracks and return file paths.
         """
-        print("Predict called with:", generation_prompt, seeds)
-
+        Path("outputs").mkdir(exist_ok=True)
         results = []
+
         if seeds is None:
             seeds = [None]
 
         for seed in seeds:
-            # Set seeds for reproducibility
             if seed is not None:
                 torch.manual_seed(seed)
                 np.random.seed(seed)
                 random.seed(seed)
 
-            # Placeholder generation logic
-            track_name = f"{album_prefix}_{seed or 'none'}"
-            track = f"{track_name}: {generation_prompt} ({duration}s @ {sample_rate}Hz)"
+            # Replace this with your actual model inference
+            # Example: audio = self.model.generate(generation_prompt, duration, sample_rate)
+            audio = np.random.randn(duration * sample_rate).astype(np.float32)
+
             if postprocess:
-                track += " + vinyl crackle"
+                crackle = 0.005 * np.random.randn(duration * sample_rate).astype(np.float32)
+                audio = audio + crackle
 
-            # Log metadata
-            Path("outputs").mkdir(exist_ok=True)
-            log_entry = {
-                "timestamp": datetime.utcnow().isoformat(),
-                "album_prefix": album_prefix,
-                "prompt": generation_prompt,
-                "seed": seed,
-                "duration": duration,
-                "sample_rate": sample_rate,
-                "output": track
-            }
-            with open(f"outputs/log_{seed or 'none'}.json", "w") as f:
-                json.dump(log_entry, f, indent=2)
+            filename = f"outputs/{album_prefix}_seed{seed or 'none'}.wav"
+            sf.write(filename, audio, sample_rate)
 
-            results.append(track)
+            results.append(filename)
 
         return results
