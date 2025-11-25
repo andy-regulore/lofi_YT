@@ -1,0 +1,12 @@
+# replicate.yaml
+name: lo-fi-generator
+description: Generate themed lo-fi tracks with metadata logging
+runtime: python3.9
+entrypoint: predict.py
+packages:
+  - ffmpeg
+python_packages:
+  - torch
+  - transformers
+  - librosa
+  - soundfile
