@@ -35,6 +35,7 @@ class Predictor:
         - postprocess: whether to apply vinyl crackle / normalization
         Returns: List of track descriptors (strings)
         """
+        print("Predict called with:", generation_prompt, seeds)
 
         results = []
         if seeds is None:
@@ -70,5 +71,3 @@ class Predictor:
             results.append(track)
 
         return results
-    
-    print("Predict called with:", generation_prompt, seeds)
