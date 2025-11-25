@@ -1,0 +1,28 @@
+tracks:
+  - id: "01"                        # Track number or identifier
+    album_prefix: "MidnightArchives" # Album prefix for filenames
+
+    # === MusicGen-usable fields ===
+    generation_prompt: "lo-fi hip hop with rain ambience"
+    duration: 30                     # seconds of audio to generate
+    sample_rate: 32000               # Hz, output sample rate
+    seeds: [1,2,3,4,5,6,7,8,9,10]    # multiple variations
+                                     # NOTE: seed can be any integer up to 2^32-1 (~4.29 billion).
+                                     # Same seed + same prompt = identical track.
+                                     # Different seeds + same prompt = unique variations.
+
+    # === Reference-only metadata (not consumed by MusicGen directly) ===
+    metadata:
+      bpm: 80                        # intended tempo (not enforced by MusicGen, but logged/catalogued)
+      mood: "chill, reflective"       # descriptive tag for vibe
+      instruments: ["piano", "drums"] # list of instruments you expect or want emphasized
+      release_tag: "MidnightArchives" # grouping label for mixes or playlists
+      notes: "Album of 10 variations using seeds 1–10. Seed ensures reproducibility; change seed for variations."
+
+    # === Post-processing instructions (applied by your pipeline, not MusicGen) ===
+    post_processing:
+      normalize: true                 # boolean, ensures consistent loudness
+      fade_out: 3000                  # milliseconds, smooth ending
+      overlay:
+        file: "rain.wav"              # path to ambience file (rain, vinyl crackle, etc.)
+        volume_adjust: -15            # dB adjustment for overlay volume
