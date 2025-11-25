@@ -70,3 +70,5 @@ class Predictor:
             results.append(track)
 
         return results
+    
+    print("Predict called with:", generation_prompt, seeds)
