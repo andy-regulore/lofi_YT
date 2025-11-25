@@ -1,5 +1,4 @@
-torch==2.1.0+cpu
--f https://download.pytorch.org/whl/torch_stable.html
+torch==2.1.0
 transformers==4.35.2
 librosa==0.10.1
 soundfile==0.12.1
