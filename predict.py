@@ -17,13 +17,16 @@ class Predictor:
 
     def predict(
         self,
-        generation_prompt: str,
+        generation_prompt: str = "lo-fi hip hop with rain ambience",
         duration: int = 30,
         sample_rate: int = 32000,
         seeds: List[int] = None,
         album_prefix: str = "Album",
         postprocess: bool = False
     ) -> List[str]:
+        """
+        Generate audio tracks and return file paths.
+        """
         Path("outputs").mkdir(exist_ok=True)
         results = []
 
@@ -42,10 +45,8 @@ class Predictor:
                 padding=True,
                 return_tensors="pt"
             )
-            audio_values = self.model.generate_audio(
-                **inputs,
-                max_new_tokens=duration * sample_rate
-            )
+            # Use generate_audio safely (no oversized max_new_tokens)
+            audio_values = self.model.generate_audio(**inputs)
 
             # Convert tensor to numpy waveform
             audio = audio_values[0].cpu().numpy().astype(np.float32)
