@@ -3,14 +3,18 @@ import random
 import numpy as np
 import soundfile as sf
 from pathlib import Path
-from datetime import datetime
 from typing import List
 
 class Predictor:
     def setup(self):
-        # Load your trained model here
-        # self.model = torch.load("models/lofi-gen.pt")
-        self.model = None  # placeholder
+        """
+        Called once when the model is loaded.
+        Load heavy models here.
+        """
+        # Example: load MusicGen from Hugging Face
+        from transformers import AutoProcessor, MusicgenForConditionalGeneration
+        self.processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
+        self.model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
 
     def predict(
         self,
@@ -36,17 +40,24 @@ class Predictor:
                 np.random.seed(seed)
                 random.seed(seed)
 
-            # Replace this with your actual model inference
-            # Example: audio = self.model.generate(generation_prompt, duration, sample_rate)
-            audio = np.random.randn(duration * sample_rate).astype(np.float32)
+            # Run inference
+            inputs = self.processor(
+                text=generation_prompt,
+                padding=True,
+                return_tensors="pt"
+            )
+            audio_values = self.model.generate(**inputs, max_length=duration * sample_rate)
 
+            # Convert to numpy
+            audio = audio_values.cpu().numpy().astype(np.float32)
+
+            # Optional postprocess (vinyl crackle)
             if postprocess:
                 crackle = 0.005 * np.random.randn(duration * sample_rate).astype(np.float32)
                 audio = audio + crackle
 
             filename = f"outputs/{album_prefix}_seed{seed or 'none'}.wav"
             sf.write(filename, audio, sample_rate)
-
             results.append(filename)
 
         return results
