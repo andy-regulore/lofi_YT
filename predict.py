@@ -3,6 +3,7 @@ import soundfile as sf
 import numpy as np
 from pathlib import Path
 from typing import List
+import random
 
 class Predictor:
     def setup(self):
@@ -30,19 +31,24 @@ class Predictor:
             if seed is not None:
                 torch.manual_seed(seed)
                 np.random.seed(seed)
+                random.seed(seed)
 
-            # Run inference
+            # Run inference with MusicGen
             inputs = self.processor(
-                text=generation_prompt,
+                text=[generation_prompt],
                 padding=True,
                 return_tensors="pt"
             )
-            audio_values = self.model.generate(**inputs, max_length=duration * sample_rate)
+            audio_values = self.model.generate_audio(
+                **inputs,
+                max_new_tokens=duration * sample_rate
+            )
 
-            audio = audio_values.cpu().numpy().astype(np.float32)
+            # audio_values is a torch tensor → convert to numpy
+            audio = audio_values[0].cpu().numpy().astype(np.float32)
 
             if postprocess:
-                crackle = 0.005 * np.random.randn(duration * sample_rate).astype(np.float32)
+                crackle = 0.005 * np.random.randn(len(audio)).astype(np.float32)
                 audio = audio + crackle
 
             filename = f"outputs/{album_prefix}_seed{seed or 'none'}.wav"
