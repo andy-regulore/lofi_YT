@@ -7,7 +7,10 @@ import random
 
 class Predictor:
     def setup(self):
-        # Load MusicGen from Hugging Face
+        """
+        Called once when the container starts.
+        Load the MusicGen model here.
+        """
         from transformers import AutoProcessor, MusicgenForConditionalGeneration
         self.processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
         self.model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
@@ -44,7 +47,7 @@ class Predictor:
                 max_new_tokens=duration * sample_rate
             )
 
-            # audio_values is a torch tensor → convert to numpy
+            # Convert tensor to numpy waveform
             audio = audio_values[0].cpu().numpy().astype(np.float32)
 
             if postprocess:
