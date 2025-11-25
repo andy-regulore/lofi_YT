@@ -1,17 +1,12 @@
 import torch
-import random
-import numpy as np
 import soundfile as sf
+import numpy as np
 from pathlib import Path
 from typing import List
 
 class Predictor:
     def setup(self):
-        """
-        Called once when the model is loaded.
-        Load heavy models here.
-        """
-        # Example: load MusicGen from Hugging Face
+        # Load MusicGen from Hugging Face
         from transformers import AutoProcessor, MusicgenForConditionalGeneration
         self.processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
         self.model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
@@ -25,9 +20,6 @@ class Predictor:
         album_prefix: str = "Album",
         postprocess: bool = False
     ) -> List[str]:
-        """
-        Generate audio tracks and return file paths.
-        """
         Path("outputs").mkdir(exist_ok=True)
         results = []
 
@@ -38,7 +30,6 @@ class Predictor:
             if seed is not None:
                 torch.manual_seed(seed)
                 np.random.seed(seed)
-                random.seed(seed)
 
             # Run inference
             inputs = self.processor(
@@ -48,10 +39,8 @@ class Predictor:
             )
             audio_values = self.model.generate(**inputs, max_length=duration * sample_rate)
 
-            # Convert to numpy
             audio = audio_values.cpu().numpy().astype(np.float32)
 
-            # Optional postprocess (vinyl crackle)
             if postprocess:
                 crackle = 0.005 * np.random.randn(duration * sample_rate).astype(np.float32)
                 audio = audio + crackle
