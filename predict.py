@@ -2,35 +2,32 @@ import torch
 import soundfile as sf
 import numpy as np
 from pathlib import Path
-from typing import List
 import random
+from typing import List
 
 class Predictor:
     def setup(self):
-        """
-        Called once when the container starts.
-        Load the MusicGen model here.
-        """
         from transformers import AutoProcessor, MusicgenForConditionalGeneration
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
         self.model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
+        self.model.to(self.device)
+        self.model.eval()
 
     def predict(
         self,
-        generation_prompt: str = "lo-fi hip hop with rain ambience",
-        duration: int = 30,
+        prompt: str = "lo-fi hip hop with rain ambience",
+        duration: int = 8,
         sample_rate: int = 32000,
         seeds: List[int] = None,
         album_prefix: str = "Album",
-        postprocess: bool = False
+        postprocess: bool = False,
+        output_format: str = "wav"
     ) -> List[str]:
-        """
-        Generate audio tracks and return file paths.
-        """
         Path("outputs").mkdir(exist_ok=True)
         results = []
 
-        if seeds is None:
+        if not seeds:
             seeds = [None]
 
         for seed in seeds:
@@ -39,23 +36,23 @@ class Predictor:
                 np.random.seed(seed)
                 random.seed(seed)
 
-            # Run inference with MusicGen
             inputs = self.processor(
-                text=[generation_prompt],
+                text=[prompt],
                 padding=True,
                 return_tensors="pt"
             )
-            # Use generate_audio safely (no oversized max_new_tokens)
-            audio_values = self.model.generate_audio(**inputs)
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
-            # Convert tensor to numpy waveform
+            with torch.no_grad():
+                audio_values = self.model.generate_audio(**inputs)
+
             audio = audio_values[0].cpu().numpy().astype(np.float32)
 
             if postprocess:
-                crackle = 0.005 * np.random.randn(len(audio)).astype(np.float32)
+                crackle = 0.003 * np.random.randn(len(audio)).astype(np.float32)
                 audio = audio + crackle
 
-            filename = f"outputs/{album_prefix}_seed{seed or 'none'}.wav"
+            filename = f"outputs/{album_prefix}_seed{seed or 'none'}.{output_format}"
             sf.write(filename, audio, sample_rate)
             results.append(filename)
 

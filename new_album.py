@@ -2,35 +2,31 @@ import replicate
 import time
 import requests
 import logging
-from datetime import datetime
 
-# Configure logging
 logging.basicConfig(
     filename="album_runs.log",
     level=logging.INFO,
     format="%(asctime)s | %(message)s"
 )
 
-# Replace with your actual version hash
-VERSION_HASH = "24d567da5e2fa094f553493ba31ff2fe12d43d3675bf2d61fc09a80a098a0b89"
+VERSION_HASH = "bcf8324009fa256b3d1937b55857a952fcd5485fda8da55497bb45a58600cd0c"
 
-# Start prediction
 prediction = replicate.predictions.create(
     version=VERSION_HASH,
     input={
-        "generation_prompt": "lo-fi hip hop with rain ambience",
-        "duration": 30,
+        "prompt": "lo-fi hip hop with rain ambience",
+        "duration": 8,  # start small
         "sample_rate": 32000,
-        "seeds": [1,2,3,4,5,6,7,8,9,10],
+        "seeds": [42],
         "album_prefix": "MidnightArchives",
         "postprocess": True
-    }
+    },
+    hardware="gpu-t4"  # force GPU tier
 )
 
 print("Prediction ID:", prediction.id)
 logging.info(f"Run started | id={prediction.id} | version={VERSION_HASH}")
 
-# Poll until finished
 start_time = time.time()
 while prediction.status not in ["succeeded", "failed", "canceled"]:
     elapsed = int(time.time() - start_time)
@@ -38,7 +34,6 @@ while prediction.status not in ["succeeded", "failed", "canceled"]:
     time.sleep(5)
     prediction = replicate.predictions.get(prediction.id)
 
-# Final status
 print("Final status:", prediction.status)
 logging.info(f"Run finished | status={prediction.status} | gpu={prediction.hardware}")
 
