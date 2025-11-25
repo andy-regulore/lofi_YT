@@ -1,34 +1,42 @@
 import torch
-import soundfile as sf
 import numpy as np
-from pathlib import Path
 import random
 from typing import List
+from cog import BasePredictor, Input, Path
 
-class Predictor:
+from audiocraft.models import MusicGen
+from audiocraft.data.audio import audio_write
+
+
+class Predictor(BasePredictor):
     def setup(self):
-        from transformers import AutoProcessor, MusicgenForConditionalGeneration
+        """
+        Load MusicGen model once when the container starts.
+        """
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
-        self.model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
+        self.model = MusicGen.get_pretrained("facebook/musicgen-small")
         self.model.to(self.device)
         self.model.eval()
 
     def predict(
         self,
-        prompt: str = "lo-fi hip hop with rain ambience",
-        duration: int = 8,
-        sample_rate: int = 32000,
-        seeds: List[int] = None,
-        album_prefix: str = "Album",
-        postprocess: bool = False,
-        output_format: str = "wav"
-    ) -> List[str]:
-        Path("outputs").mkdir(exist_ok=True)
-        results = []
+        prompt: str = Input(description="Text description of the music", default="lo-fi hip hop with rain ambience"),
+        duration: int = Input(description="Duration in seconds", default=8),
+        sample_rate: int = Input(description="Sample rate", default=32000),
+        seeds: List[int] = Input(description="List of seeds for variation", default=None),
+        album_prefix: str = Input(description="Output filename prefix", default="Album"),
+        postprocess: bool = Input(description="Add vinyl crackle effect", default=False),
+        output_format: str = Input(description="Audio format", choices=["wav", "mp3", "flac"], default="wav"),
+    ) -> List[Path]:
+        """
+        Generate audio and return Cog Paths (Replicate will upload them).
+        """
+        results: List[Path] = []
 
         if not seeds:
             seeds = [None]
+
+        self.model.set_generation_params(duration=duration)
 
         for seed in seeds:
             if seed is not None:
@@ -36,24 +44,20 @@ class Predictor:
                 np.random.seed(seed)
                 random.seed(seed)
 
-            inputs = self.processor(
-                text=[prompt],
-                padding=True,
-                return_tensors="pt"
-            )
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
             with torch.no_grad():
-                audio_values = self.model.generate_audio(**inputs)
+                audio = self.model.generate([prompt])
+                # audio shape: [B, T] or [B, C, T]
+                if audio.ndim == 3:
+                    audio = audio[0, 0, :]
+                else:
+                    audio = audio[0, :]
 
-            audio = audio_values[0].cpu().numpy().astype(np.float32)
+                if postprocess:
+                    crackle = 0.003 * torch.randn_like(audio)
+                    audio = (audio + crackle).clamp(-1.0, 1.0)
 
-            if postprocess:
-                crackle = 0.003 * np.random.randn(len(audio)).astype(np.float32)
-                audio = audio + crackle
-
-            filename = f"outputs/{album_prefix}_seed{seed or 'none'}.{output_format}"
-            sf.write(filename, audio, sample_rate)
-            results.append(filename)
+            out_path = Path(f"{album_prefix}_seed{seed or 'none'}.{output_format}")
+            audio_write(out_path, audio.cpu(), sample_rate=sample_rate, strategy="loudness", loudness_compressor=True)
+            results.append(out_path)
 
         return results

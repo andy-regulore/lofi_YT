@@ -9,7 +9,7 @@ logging.basicConfig(
     format="%(asctime)s | %(message)s"
 )
 
-VERSION_HASH = "bcf8324009fa256b3d1937b55857a952fcd5485fda8da55497bb45a58600cd0c"
+VERSION_HASH = "63da25ea46b6099626653788cccdd498862f488b43449162e7c3d84ef927b279"  # update after push
 
 prediction = replicate.predictions.create(
     version=VERSION_HASH,
@@ -19,7 +19,8 @@ prediction = replicate.predictions.create(
         "sample_rate": 32000,
         "seeds": [42],
         "album_prefix": "MidnightArchives",
-        "postprocess": True
+        "postprocess": True,
+        "output_format": "wav"
     },
     hardware="gpu-t4"  # force GPU tier
 )
